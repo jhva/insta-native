@@ -20,6 +20,7 @@ const Logo = styled.Image`
 
 const LoginLink = styled.Text`
   color: ${colors.blue};
+  text-align: center;
   font-weight: 600;
   margin-top: 20px;
 `;
