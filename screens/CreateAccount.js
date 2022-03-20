@@ -6,14 +6,51 @@ import styled from 'styled-components/native';
 import AuthButton from '../auth/authbutton';
 import AuthLayout from '../auth/AuthLayout';
 import { TextInput } from '../auth/AuthShard';
+import { gql, useMutation } from '@apollo/client';
 
 const Container = styled.View`
   flex: 1;
   background-color: black;
 `;
-
-export default function CreateAccount() {
-  const { register, handleSubmit, setValue } = useForm();
+const CREATE_ACCOUNT_MUTATION = gql`
+  mutation createAccount(
+    $firstName: String!
+    $lastName: String
+    $username: String!
+    $email: String!
+    $password: String!
+  ) {
+    createAccount(
+      firstName: $firstName
+      lastName: $lastName
+      username: $username
+      email: $email
+      password: $password
+    ) {
+      ok
+      error
+    }
+  }
+`;
+export default function CreateAccount({ navigation }) {
+  const { register, handleSubmit, setValue, getValues } = useForm();
+  const [createAccountMutation, { loading }] = useMutation(
+    CREATE_ACCOUNT_MUTATION,
+    { onCompleted }
+  );
+  const onCompleted = (data) => {
+    console.log(data);
+    const {
+      createAccount: { ok },
+    } = data;
+    const { username, password } = getValues();
+    if (ok) {
+      navigation.navigate('Login', {
+        username,
+        password,
+      });
+    }
+  };
 
   const lastNameRef = useRef();
   const NickName = useRef();
@@ -27,14 +64,18 @@ export default function CreateAccount() {
     alert('done');
   };
   const onVaild = (data) => {
-    console.log(data);
+    if (!loading) {
+      createAccountMutation({
+        variables: { ...data },
+      });
+    }
   };
   useEffect(() => {
-    register('이름');
-    register('성');
-    register('닉네임');
-    register('이메일');
-    register('비밀번호');
+    register('firstName', { require: true });
+    register('lastName', { require: true });
+    register('username', { require: true });
+    register('email', { require: true });
+    register('password', { require: true });
   }, [register]);
   return (
     <AuthLayout>
@@ -44,7 +85,7 @@ export default function CreateAccount() {
         placeholder="이름"
         placeholderTextColor={'rgba(255, 255, 255, 0.6)'}
         onSubmitEditing={() => onNextNameRef(lastNameRef)}
-        onChangeText={(text) => setValue('이름', text)}
+        onChangeText={(text) => setValue('firstName', text)}
       />
 
       <TextInput
@@ -52,12 +93,12 @@ export default function CreateAccount() {
         returnKeyType="next"
         onSubmitEditing={() => onNextNameRef(NickName)}
         placeholderTextColor={'rgba(255, 255, 255, 0.6)'}
-        onChangeText={(text) => setValue('성', text)}
+        onChangeText={(text) => setValue('lastName', text)}
         placeholder="성"
       />
       <TextInput
-        onChangeText={(text) => setValue('닉네임', text)}
-        autoCapitalize="none"
+        onChangeText={(text) => setValue('username', text)}
+        autoCapitalize={'none'}
         ref={NickName}
         returnKeyType="next"
         placeholderTextColor={'rgba(255, 255, 255, 0.6)'}
@@ -65,7 +106,7 @@ export default function CreateAccount() {
         onSubmitEditing={() => onNextNameRef(emailNameRef)}
       />
       <TextInput
-        onChangeText={(text) => setValue('이메일', text)}
+        onChangeText={(text) => setValue('email', text)}
         ref={emailNameRef}
         placeholderTextColor={'rgba(255, 255, 255, 0.6)'}
         placeholder="이메일"
@@ -76,14 +117,16 @@ export default function CreateAccount() {
       <TextInput
         ref={passwordNameRef}
         placeholder="비밀번호"
-        onChangeText={(text) => setValue('비밀번호', text)}
+        onChangeText={(text) => setValue('password', text)}
         secureTextEntry
         lastOne={true}
         returnKeyType="done"
         onPress={handleSubmit(onVaild)}
+        onSubmitEditing={handleSubmit(onVaild)}
         placeholderTextColor={'rgba(255, 255, 255, 0.6)'}
       />
       <AuthButton
+        // loading
         text="회원가입"
         disabled={false}
         onPress={handleSubmit(onVaild)}
